@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { db } from '../db';
 import { AuthRequest } from '../middleware/auth';
-import { LostPet } from '../types';
+import { LostPet, LostPetClue } from '../types';
 
 const router = Router();
 
@@ -99,6 +99,81 @@ router.delete('/:id', (req: AuthRequest, res: Response) => {
 
   db.prepare('DELETE FROM lost_pets WHERE id = ?').run(req.params.id);
   res.json({ message: '删除成功' });
+});
+
+// Submit a clue for a lost pet
+router.post('/:id/clues', (req: AuthRequest, res: Response) => {
+  const lostPetId = parseInt(req.params.id);
+  const { sighting_time, sighting_location, photo, description } = req.body;
+
+  if (!sighting_time || !sighting_location) {
+    res.status(400).json({ error: '目击时间和地点不能为空' });
+    return;
+  }
+
+  const lostPet = db.prepare('SELECT * FROM lost_pets WHERE id = ?').get(lostPetId) as LostPet | undefined;
+  if (!lostPet) {
+    res.status(404).json({ error: '寻宠启事不存在' });
+    return;
+  }
+
+  if (lostPet.user_id === req.userId) {
+    res.status(400).json({ error: '不能给自己的寻宠启事提供线索' });
+    return;
+  }
+
+  const result = db.prepare(
+    `INSERT INTO lost_pet_clues (lost_pet_id, witness_id, sighting_time, sighting_location, photo, description)
+     VALUES (?, ?, ?, ?, ?, ?)`
+  ).run(lostPetId, req.userId!, sighting_time, sighting_location, photo || '', description || '');
+
+  const clue = db.prepare(
+    `SELECT lpc.*, u.nickname as witness_nickname, u.avatar as witness_avatar
+     FROM lost_pet_clues lpc
+     LEFT JOIN users u ON lpc.witness_id = u.id
+     WHERE lpc.id = ?`
+  ).get(result.lastInsertRowid) as LostPetClue;
+
+  res.json({ clue });
+});
+
+// Get clues for a lost pet (only owner can see)
+router.get('/:id/clues', (req: AuthRequest, res: Response) => {
+  const lostPetId = parseInt(req.params.id);
+
+  const lostPet = db.prepare('SELECT * FROM lost_pets WHERE id = ?').get(lostPetId) as LostPet | undefined;
+  if (!lostPet) {
+    res.status(404).json({ error: '寻宠启事不存在' });
+    return;
+  }
+
+  if (lostPet.user_id !== req.userId) {
+    res.status(403).json({ error: '只有发布者可以查看线索' });
+    return;
+  }
+
+  const clues = db.prepare(
+    `SELECT lpc.*, u.nickname as witness_nickname, u.avatar as witness_avatar
+     FROM lost_pet_clues lpc
+     LEFT JOIN users u ON lpc.witness_id = u.id
+     WHERE lpc.lost_pet_id = ?
+     ORDER BY lpc.created_at DESC`
+  ).all(lostPetId) as LostPetClue[];
+
+  res.json({ clues });
+});
+
+// Get clues I submitted
+router.get('/clues/mine', (req: AuthRequest, res: Response) => {
+  const clues = db.prepare(
+    `SELECT lpc.*, lp.name as pet_name, lp.photo as pet_photo
+     FROM lost_pet_clues lpc
+     LEFT JOIN lost_pets lp ON lpc.lost_pet_id = lp.id
+     WHERE lpc.witness_id = ?
+     ORDER BY lpc.created_at DESC`
+  ).all(req.userId!) as LostPetClue[];
+
+  res.json({ clues });
 });
 
 export default router;

@@ -80,7 +80,8 @@ export const api = {
   // Messages
   getConversations: () => request<{ conversations: any[] }>('/messages/conversations'),
   getMessages: (fosteringNeedId: number) => request<{ messages: any[] }>(`/messages/${fosteringNeedId}`),
-  sendMessage: (data: { to_user_id: number; fostering_need_id: number; content: string }) =>
+  getLostPetMessages: (lostPetId: number) => request<{ messages: any[] }>(`/messages/lost-pet/${lostPetId}`),
+  sendMessage: (data: { to_user_id: number; fostering_need_id?: number; lost_pet_id?: number; content: string }) =>
     request<{ message: any }>('/messages', { method: 'POST', body: JSON.stringify(data) }),
 
   // Lost Found
@@ -94,6 +95,9 @@ export const api = {
   createLostPet: (data: any) => request<{ lostPet: any }>('/lost-found', { method: 'POST', body: JSON.stringify(data) }),
   markFound: (id: number) => request<{ message: string }>(`/lost-found/${id}/found`, { method: 'PUT' }),
   deleteLostPet: (id: number) => request<{ message: string }>(`/lost-found/${id}`, { method: 'DELETE' }),
+  submitClue: (lostPetId: number, data: any) => request<{ clue: any }>(`/lost-found/${lostPetId}/clues`, { method: 'POST', body: JSON.stringify(data) }),
+  getLostPetClues: (lostPetId: number) => request<{ clues: any[] }>(`/lost-found/${lostPetId}/clues`),
+  getMyClues: () => request<{ clues: any[] }>('/lost-found/clues/mine'),
 
   // Profile
   getProfile: () => request<{ user: any }>('/profile'),

@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
-import { Pet, FosteringNeed, FosteringApplication, LostPet, User } from '../types';
+import { Pet, FosteringNeed, FosteringApplication, LostPet, User, LostPetClue } from '../types';
 import { getStatusTag, formatDate, getAppStatusText } from '../utils';
 
 export default function ProfilePage() {
   const { user, refreshUser } = useAuth();
-  const [tab, setTab] = useState<'pets' | 'fostering' | 'lost'>('pets');
+  const [tab, setTab] = useState<'pets' | 'fostering' | 'lost' | 'clues'>('pets');
   const [myPets, setMyPets] = useState<Pet[]>([]);
   const [myNeeds, setMyNeeds] = useState<FosteringNeed[]>([]);
   const [myApplications, setMyApplications] = useState<FosteringApplication[]>([]);
   const [myLostPets, setMyLostPets] = useState<LostPet[]>([]);
+  const [myClues, setMyClues] = useState<LostPetClue[]>([]);
   const [loading, setLoading] = useState(true);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({ nickname: '', phone: '', bio: '' });
@@ -29,16 +30,18 @@ export default function ProfilePage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [petsRes, needsRes, appsRes, lostRes] = await Promise.all([
+      const [petsRes, needsRes, appsRes, lostRes, cluesRes] = await Promise.all([
         api.getMyPets(),
         api.getMyFosteringNeeds(),
         api.getMyApplications(),
         api.getMyLostPets(),
+        api.getMyClues(),
       ]);
       setMyPets(petsRes.pets);
       setMyNeeds(needsRes.needs);
       setMyApplications(appsRes.applications);
       setMyLostPets(lostRes.lostPets);
+      setMyClues(cluesRes.clues);
     } catch (err) {
       console.error(err);
     } finally {
@@ -97,6 +100,9 @@ export default function ProfilePage() {
         </button>
         <button className={`tab-btn ${tab === 'lost' ? 'active' : ''}`} onClick={() => setTab('lost')}>
           寻宠记录 ({myLostPets.length})
+        </button>
+        <button className={`tab-btn ${tab === 'clues' ? 'active' : ''}`} onClick={() => setTab('clues')}>
+          我的线索 ({myClues.length})
         </button>
       </div>
 
@@ -170,7 +176,7 @@ export default function ProfilePage() {
             <div className="empty-state"><p>暂无寄养记录</p></div>
           )}
         </div>
-      ) : (
+      ) : tab === 'lost' ? (
         myLostPets.length === 0 ? (
           <div className="empty-state"><p>暂无寻宠记录</p></div>
         ) : (
@@ -190,6 +196,34 @@ export default function ProfilePage() {
                   <p className="meta">走失地点：{lp.lost_location}</p>
                   <p className="meta">走失时间：{lp.lost_date}</p>
                   <p className="meta" style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>{formatDate(lp.created_at)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      ) : (
+        myClues.length === 0 ? (
+          <div className="empty-state"><p>暂无线索记录</p></div>
+        ) : (
+          <div className="card-grid">
+            {myClues.map(clue => (
+              <div key={clue.id} className="pet-card">
+                {clue.pet_photo ? (
+                  <img src={clue.pet_photo} alt={clue.pet_name} className="pet-card-img" />
+                ) : clue.photo ? (
+                  <img src={clue.photo} alt="线索照片" className="pet-card-img" />
+                ) : (
+                  <div className="pet-card-img">{clue.pet_name || '线索照片'}</div>
+                )}
+                <div className="pet-card-body">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <h3>{clue.pet_name || '走失宠物'}</h3>
+                    <span className="tag tag-open">我提供的线索</span>
+                  </div>
+                  <p className="meta">目击时间：{clue.sighting_time}</p>
+                  <p className="meta">目击地点：{clue.sighting_location}</p>
+                  {clue.description && <p className="meta" style={{ color: '#555', marginTop: 4 }}>{clue.description}</p>}
+                  <p className="meta" style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>{formatDate(clue.created_at)}</p>
                 </div>
               </div>
             ))}

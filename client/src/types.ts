@@ -63,7 +63,8 @@ export interface Message {
   id: number;
   from_user_id: number;
   to_user_id: number;
-  fostering_need_id: number;
+  fostering_need_id: number | null;
+  lost_pet_id: number | null;
   content: string;
   read: number;
   created_at: string;
@@ -73,9 +74,10 @@ export interface Message {
 
 export interface Conversation {
   other_user_id: number;
-  fostering_need_id: number;
-  start_date: string;
-  end_date: string;
+  fostering_need_id: number | null;
+  lost_pet_id: number | null;
+  start_date: string | null;
+  end_date: string | null;
   pet_name: string;
   last_message: string;
   last_time: string;
@@ -111,4 +113,19 @@ export interface LostPet {
   created_at: string;
   user_nickname?: string;
   user_phone?: string;
+}
+
+export interface LostPetClue {
+  id: number;
+  lost_pet_id: number;
+  witness_id: number;
+  sighting_time: string;
+  sighting_location: string;
+  photo: string;
+  description: string;
+  created_at: string;
+  witness_nickname?: string;
+  witness_avatar?: string;
+  pet_name?: string;
+  pet_photo?: string;
 }

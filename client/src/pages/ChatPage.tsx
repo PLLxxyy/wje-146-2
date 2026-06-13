@@ -33,7 +33,12 @@ export default function ChatPage() {
   const fetchMessages = async (conv: Conversation) => {
     setActiveConv(conv);
     try {
-      const res = await api.getMessages(conv.fostering_need_id);
+      let res;
+      if (conv.lost_pet_id) {
+        res = await api.getLostPetMessages(conv.lost_pet_id);
+      } else {
+        res = await api.getMessages(conv.fostering_need_id!);
+      }
       setMessages(res.messages);
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     } catch (err) {
@@ -49,7 +54,8 @@ export default function ChatPage() {
     try {
       const res = await api.sendMessage({
         to_user_id: activeConv.other_user_id,
-        fostering_need_id: activeConv.fostering_need_id,
+        fostering_need_id: activeConv.fostering_need_id ?? undefined,
+        lost_pet_id: activeConv.lost_pet_id ?? undefined,
         content: newMessage.trim(),
       });
       setMessages(prev => [...prev, res.message]);
@@ -62,6 +68,13 @@ export default function ChatPage() {
     }
   };
 
+  const getChatHeaderText = (conv: Conversation) => {
+    if (conv.lost_pet_id) {
+      return `${conv.other_nickname} - ${conv.pet_name || '走失宠物'} 线索沟通`;
+    }
+    return `${conv.other_nickname} - ${conv.pet_name} 寄养沟通`;
+  };
+
   if (loading) return <div className="loading">加载中...</div>;
 
   return (
@@ -70,13 +83,13 @@ export default function ChatPage() {
         <div className="chat-sidebar-header">消息列表</div>
         {conversations.length === 0 ? (
           <div style={{ padding: 20, textAlign: 'center', color: '#aaa', fontSize: 14 }}>
-            暂无消息，确认寄养后可聊天
+            暂无消息
           </div>
         ) : (
           conversations.map(conv => (
             <div
-              key={`${conv.fostering_need_id}-${conv.other_user_id}`}
-              className={`chat-item ${activeConv?.fostering_need_id === conv.fostering_need_id && activeConv?.other_user_id === conv.other_user_id ? 'active' : ''}`}
+              key={`${conv.fostering_need_id || 'lp'}-${conv.lost_pet_id || 'fn'}-${conv.other_user_id}`}
+              className={`chat-item ${activeConv && ((activeConv.fostering_need_id === conv.fostering_need_id && activeConv.lost_pet_id === conv.lost_pet_id) && activeConv.other_user_id === conv.other_user_id) ? 'active' : ''}`}
               onClick={() => fetchMessages(conv)}
             >
               <div className="chat-item-header">
@@ -87,7 +100,10 @@ export default function ChatPage() {
                 <span className="time">{conv.last_time ? formatDate(conv.last_time) : ''}</span>
               </div>
               <p className="chat-item-preview">
-                {conv.pet_name && `[${conv.pet_name}] `}{conv.last_message || '暂无消息'}
+                {conv.pet_name && `[${conv.pet_name}] `}
+                {conv.lost_pet_id && <span style={{ color: '#ff9800', fontSize: 12 }}>[线索]</span>}
+                {!conv.lost_pet_id && <span style={{ color: '#4caf50', fontSize: 12 }}>[寄养]</span>}
+                {' '}{conv.last_message || '暂无消息'}
               </p>
             </div>
           ))
@@ -98,12 +114,12 @@ export default function ChatPage() {
         {activeConv ? (
           <>
             <div className="chat-header">
-              {activeConv.other_nickname} - {activeConv.pet_name} 寄养沟通
+              {getChatHeaderText(activeConv)}
             </div>
             <div className="chat-messages">
               {messages.length === 0 && (
                 <div style={{ textAlign: 'center', color: '#aaa', fontSize: 14, padding: 20 }}>
-                  开始沟通寄养细节吧
+                  {activeConv.lost_pet_id ? '开始沟通线索细节吧' : '开始沟通寄养细节吧'}
                 </div>
               )}
               {messages.map(msg => (

@@ -69,12 +69,15 @@ function initTables() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       from_user_id INTEGER NOT NULL,
       to_user_id INTEGER NOT NULL,
-      fostering_need_id INTEGER NOT NULL,
+      fostering_need_id INTEGER,
+      lost_pet_id INTEGER,
       content TEXT NOT NULL,
       read INTEGER DEFAULT 0,
       created_at TEXT DEFAULT (datetime('now','localtime')),
       FOREIGN KEY (from_user_id) REFERENCES users(id),
-      FOREIGN KEY (to_user_id) REFERENCES users(id)
+      FOREIGN KEY (to_user_id) REFERENCES users(id),
+      FOREIGN KEY (fostering_need_id) REFERENCES fostering_needs(id),
+      FOREIGN KEY (lost_pet_id) REFERENCES lost_pets(id)
     );
 
     CREATE TABLE IF NOT EXISTS reviews (
@@ -104,6 +107,19 @@ function initTables() {
       found INTEGER DEFAULT 0,
       created_at TEXT DEFAULT (datetime('now','localtime')),
       FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS lost_pet_clues (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      lost_pet_id INTEGER NOT NULL,
+      witness_id INTEGER NOT NULL,
+      sighting_time TEXT NOT NULL,
+      sighting_location TEXT NOT NULL,
+      photo TEXT DEFAULT '',
+      description TEXT DEFAULT '',
+      created_at TEXT DEFAULT (datetime('now','localtime')),
+      FOREIGN KEY (lost_pet_id) REFERENCES lost_pets(id),
+      FOREIGN KEY (witness_id) REFERENCES users(id)
     );
   `);
 }
