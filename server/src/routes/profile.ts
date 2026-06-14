@@ -1,11 +1,12 @@
 import { Router, Response } from 'express';
-import { db } from '../db';
+import { getDb } from '../db';
 import { AuthRequest } from '../middleware/auth';
 import { User } from '../types';
 
 const router = Router();
 
 router.get('/', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const user = db.prepare(
     'SELECT id, username, nickname, avatar, phone, bio, created_at FROM users WHERE id = ?'
   ).get(req.userId!) as Omit<User, 'password'> | undefined;
@@ -19,6 +20,7 @@ router.get('/', (req: AuthRequest, res: Response) => {
 });
 
 router.put('/', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const { nickname, avatar, phone, bio } = req.body;
 
   db.prepare(

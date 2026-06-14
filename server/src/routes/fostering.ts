@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import { db } from '../db';
+import { getDb } from '../db';
 import { AuthRequest } from '../middleware/auth';
 import { FosteringNeed, FosteringApplication, Review } from '../types';
 
@@ -7,6 +7,7 @@ const router = Router();
 
 // Get all fostering needs
 router.get('/', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const { status, page = '1', pageSize = '20' } = req.query;
   const pageNum = parseInt(page as string) || 1;
   const size = parseInt(pageSize as string) || 20;
@@ -40,6 +41,7 @@ router.get('/', (req: AuthRequest, res: Response) => {
 
 // Create fostering need
 router.post('/', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const { pet_id, start_date, end_date, requirements } = req.body;
 
   if (!pet_id || !start_date || !end_date) {
@@ -63,6 +65,7 @@ router.post('/', (req: AuthRequest, res: Response) => {
 
 // Get my fostering needs
 router.get('/mine', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const needs = db.prepare(
     `SELECT fn.*, p.name as pet_name, p.breed as pet_breed, p.photo as pet_photo
      FROM fostering_needs fn
@@ -76,6 +79,7 @@ router.get('/mine', (req: AuthRequest, res: Response) => {
 
 // Apply for fostering
 router.post('/:id/apply', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const { experience, environment } = req.body;
   const needId = req.params.id;
 
@@ -114,6 +118,7 @@ router.post('/:id/apply', (req: AuthRequest, res: Response) => {
 
 // Get applications for a fostering need
 router.get('/:id/applications', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const need = db.prepare('SELECT * FROM fostering_needs WHERE id = ?').get(req.params.id) as FosteringNeed | undefined;
   if (!need) {
     res.status(404).json({ error: '寄养需求不存在' });
@@ -133,6 +138,7 @@ router.get('/:id/applications', (req: AuthRequest, res: Response) => {
 
 // Accept an application
 router.post('/applications/:id/accept', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const app = db.prepare(
     `SELECT fa.*, fn.user_id as need_owner_id, fn.status as need_status
      FROM fostering_applications fa
@@ -159,6 +165,7 @@ router.post('/applications/:id/accept', (req: AuthRequest, res: Response) => {
 
 // Get my applications (as applicant)
 router.get('/my-applications', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const applications = db.prepare(
     `SELECT fa.*, fn.start_date, fn.end_date, fn.requirements, fn.status as need_status,
             p.name as pet_name, p.breed as pet_breed, p.photo as pet_photo,
@@ -176,6 +183,7 @@ router.get('/my-applications', (req: AuthRequest, res: Response) => {
 
 // Complete fostering
 router.post('/:id/complete', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const need = db.prepare('SELECT * FROM fostering_needs WHERE id = ?').get(req.params.id) as FosteringNeed | undefined;
   if (!need) {
     res.status(404).json({ error: '寄养需求不存在' });
@@ -193,6 +201,7 @@ router.post('/:id/complete', (req: AuthRequest, res: Response) => {
 
 // Submit review
 router.post('/:id/review', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const { rating, comment, reviewee_id } = req.body;
   const needId = req.params.id;
 
@@ -225,6 +234,7 @@ router.post('/:id/review', (req: AuthRequest, res: Response) => {
 
 // Get reviews for a user
 router.get('/user/:userId/reviews', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const reviews = db.prepare(
     `SELECT r.*, u.nickname as reviewer_nickname
      FROM reviews r

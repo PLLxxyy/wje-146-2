@@ -1,11 +1,12 @@
 import { Router, Response } from 'express';
-import { db } from '../db';
+import { getDb } from '../db';
 import { AuthRequest } from '../middleware/auth';
 import { Pet } from '../types';
 
 const router = Router();
 
 router.get('/', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const { species, search, page = '1', pageSize = '20' } = req.query;
   const pageNum = parseInt(page as string) || 1;
   const size = parseInt(pageSize as string) || 20;
@@ -43,6 +44,7 @@ router.get('/', (req: AuthRequest, res: Response) => {
 });
 
 router.get('/:id', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const pet = db.prepare(
     `SELECT p.*, u.nickname as owner_name, u.avatar as owner_avatar
      FROM pets p LEFT JOIN users u ON p.user_id = u.id
@@ -58,6 +60,7 @@ router.get('/:id', (req: AuthRequest, res: Response) => {
 });
 
 router.post('/', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const { name, breed, species, age, photo, vaccine, notes } = req.body;
 
   if (!name || !breed || !species) {
@@ -74,6 +77,7 @@ router.post('/', (req: AuthRequest, res: Response) => {
 });
 
 router.put('/:id', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const existing = db.prepare('SELECT * FROM pets WHERE id = ? AND user_id = ?').get(req.params.id, req.userId!) as Pet | undefined;
   if (!existing) {
     res.status(404).json({ error: '宠物不存在或无权编辑' });
@@ -101,6 +105,7 @@ router.put('/:id', (req: AuthRequest, res: Response) => {
 });
 
 router.delete('/:id', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const existing = db.prepare('SELECT * FROM pets WHERE id = ? AND user_id = ?').get(req.params.id, req.userId!) as Pet | undefined;
   if (!existing) {
     res.status(404).json({ error: '宠物不存在或无权删除' });
@@ -112,6 +117,7 @@ router.delete('/:id', (req: AuthRequest, res: Response) => {
 });
 
 router.get('/user/mine', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const pets = db.prepare(
     'SELECT * FROM pets WHERE user_id = ? ORDER BY created_at DESC'
   ).all(req.userId!) as Pet[];

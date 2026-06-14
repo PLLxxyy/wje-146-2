@@ -1,7 +1,8 @@
 import bcrypt from 'bcryptjs';
-import { db } from './db';
+import { getDb } from './db';
 
 export function seedData() {
+  const db = getDb();
   const userCount = db.prepare('SELECT COUNT(*) as cnt FROM users').get() as { cnt: number };
   if (userCount.cnt > 0) return;
 

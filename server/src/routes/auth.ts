@@ -1,12 +1,18 @@
 import { Router, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import { db } from '../db';
-import { generateToken, AuthRequest } from '../middleware/auth';
+import jwt from 'jsonwebtoken';
+import { getDb } from '../db';
+import { AuthRequest } from '../middleware/auth';
 import { User } from '../types';
+
+function generateToken(userId: number): string {
+  return jwt.sign({ userId }, process.env.JWT_SECRET || 'dev-secret', { expiresIn: '7d' });
+}
 
 const router = Router();
 
 router.post('/register', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const { username, password, nickname } = req.body;
 
   if (!username || !password) {
@@ -43,6 +49,7 @@ router.post('/register', (req: AuthRequest, res: Response) => {
 });
 
 router.post('/login', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const { username, password } = req.body;
 
   if (!username || !password) {
@@ -70,6 +77,7 @@ router.post('/login', (req: AuthRequest, res: Response) => {
 });
 
 router.get('/me', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const user = db.prepare(
     'SELECT id, username, nickname, avatar, phone, bio, created_at FROM users WHERE id = ?'
   ).get(req.userId!) as Omit<User, 'password'> | undefined;

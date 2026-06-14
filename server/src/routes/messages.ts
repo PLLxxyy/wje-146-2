@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import { db } from '../db';
+import { getDb } from '../db';
 import { AuthRequest } from '../middleware/auth';
 import { Message } from '../types';
 
@@ -7,6 +7,7 @@ const router = Router();
 
 // Get conversations list
 router.get('/conversations', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const userId = req.userId!;
 
   const fosteringConversations = db.prepare(`
@@ -70,6 +71,7 @@ router.get('/conversations', (req: AuthRequest, res: Response) => {
 
 // Get messages for a conversation (backward compatible with fostering needs)
 router.get('/:fosteringNeedId', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const userId = req.userId!;
   const needId = req.params.fosteringNeedId;
 
@@ -90,6 +92,7 @@ router.get('/:fosteringNeedId', (req: AuthRequest, res: Response) => {
 
 // Get messages for a fostering conversation (explicit)
 router.get('/fostering/:fosteringNeedId', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const userId = req.userId!;
   const needId = req.params.fosteringNeedId;
 
@@ -110,6 +113,7 @@ router.get('/fostering/:fosteringNeedId', (req: AuthRequest, res: Response) => {
 
 // Get messages for a lost pet conversation
 router.get('/lost-pet/:lostPetId', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const userId = req.userId!;
   const lostPetId = req.params.lostPetId;
 
@@ -130,6 +134,7 @@ router.get('/lost-pet/:lostPetId', (req: AuthRequest, res: Response) => {
 
 // Send a message
 router.post('/', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const { to_user_id, fostering_need_id, lost_pet_id, content } = req.body;
 
   if (!content || !content.trim()) {

@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import { db } from '../db';
+import { getDb } from '../db';
 import { AuthRequest } from '../middleware/auth';
 import { LostPet, LostPetClue } from '../types';
 
@@ -7,6 +7,7 @@ const router = Router();
 
 // Get all lost pets (for carousel)
 router.get('/', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const { found, page = '1', pageSize = '20' } = req.query;
   const pageNum = parseInt(page as string) || 1;
   const size = parseInt(pageSize as string) || 20;
@@ -38,6 +39,7 @@ router.get('/', (req: AuthRequest, res: Response) => {
 
 // Get active (unfound) lost pets for carousel
 router.get('/active', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const lostPets = db.prepare(
     `SELECT lp.*, u.nickname as user_nickname
      FROM lost_pets lp
@@ -52,6 +54,7 @@ router.get('/active', (req: AuthRequest, res: Response) => {
 
 // Get my lost pet reports
 router.get('/mine', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const lostPets = db.prepare(
     'SELECT * FROM lost_pets WHERE user_id = ? ORDER BY created_at DESC'
   ).all(req.userId!) as LostPet[];
@@ -61,6 +64,7 @@ router.get('/mine', (req: AuthRequest, res: Response) => {
 
 // Create lost pet report
 router.post('/', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const { photo, species, breed, name, lost_location, lost_date, contact, description } = req.body;
 
   if (!lost_location || !lost_date || !contact) {
@@ -79,6 +83,7 @@ router.post('/', (req: AuthRequest, res: Response) => {
 
 // Mark as found
 router.put('/:id/found', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const existing = db.prepare('SELECT * FROM lost_pets WHERE id = ? AND user_id = ?').get(req.params.id, req.userId!) as LostPet | undefined;
   if (!existing) {
     res.status(404).json({ error: '记录不存在或无权操作' });
@@ -91,6 +96,7 @@ router.put('/:id/found', (req: AuthRequest, res: Response) => {
 
 // Delete lost pet report
 router.delete('/:id', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const existing = db.prepare('SELECT * FROM lost_pets WHERE id = ? AND user_id = ?').get(req.params.id, req.userId!) as LostPet | undefined;
   if (!existing) {
     res.status(404).json({ error: '记录不存在或无权删除' });
@@ -103,6 +109,7 @@ router.delete('/:id', (req: AuthRequest, res: Response) => {
 
 // Submit a clue for a lost pet
 router.post('/:id/clues', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const lostPetId = parseInt(req.params.id);
   const { sighting_time, sighting_location, photo, description } = req.body;
 
@@ -139,6 +146,7 @@ router.post('/:id/clues', (req: AuthRequest, res: Response) => {
 
 // Get clues for a lost pet (only owner can see)
 router.get('/:id/clues', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const lostPetId = parseInt(req.params.id);
 
   const lostPet = db.prepare('SELECT * FROM lost_pets WHERE id = ?').get(lostPetId) as LostPet | undefined;
@@ -165,6 +173,7 @@ router.get('/:id/clues', (req: AuthRequest, res: Response) => {
 
 // Get clues I submitted
 router.get('/clues/mine', (req: AuthRequest, res: Response) => {
+  const db = getDb();
   const clues = db.prepare(
     `SELECT lpc.*, lp.name as pet_name, lp.photo as pet_photo
      FROM lost_pet_clues lpc
